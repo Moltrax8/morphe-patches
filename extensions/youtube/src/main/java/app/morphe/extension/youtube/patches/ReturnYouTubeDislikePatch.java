@@ -542,7 +542,10 @@ public class ReturnYouTubeDislikePatch {
          *         action bar has room for.  Every other button is square.
          */
         private boolean drawsBeside() {
-            return !isLike && hasOwnLabel() && host.getWidth() > host.getHeight();
+            return OLD_ACTION_BAR_ENABLED
+                    && !isLike
+                    && hasOwnLabel()
+                    && host.getWidth() > host.getHeight();
         }
 
         void setButton(String label, boolean isLike) {
