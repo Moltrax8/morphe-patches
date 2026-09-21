@@ -453,6 +453,11 @@ public class ReturnYouTubeDislikePatch {
         return bar == host ? hostShowsText(host) : subtreeShowsText(bar, 0);
     }
 
+    private static boolean barShowsNumber(View host) {
+        View bar = barOf(host);
+        return bar == host ? hostShowsNumber(host) : subtreeShowsNumber(bar, 0);
+    }
+
     /**
      * The height is used rather than the width, since the dislike button is no longer square.
      *
@@ -492,6 +497,21 @@ public class ReturnYouTubeDislikePatch {
         return false;
     }
 
+    private static boolean subtreeShowsNumber(View view, int depth) {
+        if (hostShowsNumber(view)) {
+            return true;
+        }
+        if (depth >= MAX_BAR_DEPTH || !(view instanceof ViewGroup group)) {
+            return false;
+        }
+        for (int i = 0, childCount = group.getChildCount(); i < childCount; i++) {
+            if (subtreeShowsNumber(group.getChildAt(i), depth + 1)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * @return If the Litho host has mounted any text, which needs the unobfuscated Litho classes
      *         since the extension cannot compile against them.
@@ -510,6 +530,26 @@ public class ReturnYouTubeDislikePatch {
             Logger.printDebug(() -> "Could not read the text of: " + host);
             return false;
         }
+    }
+
+    private static boolean hostShowsNumber(View view) {
+        if (!(view instanceof ComponentHost host)) {
+            return false;
+        }
+        try {
+            TextContent textContent = host.getTextContent();
+            if (textContent == null) {
+                return false;
+            }
+            for (CharSequence text : textContent.getTextItems()) {
+                if (Utils.containsNumber(text)) {
+                    return true;
+                }
+            }
+        } catch (Exception ex) {
+            Logger.printDebug(() -> "Could not read the text of: " + host);
+        }
+        return false;
     }
 
     /**
@@ -560,7 +600,11 @@ public class ReturnYouTubeDislikePatch {
         private boolean hasOwnLabel() {
             Boolean cached = hasOwnLabel;
             if (cached == null) {
-                hasOwnLabel = cached = barShowsText(host);
+                hasOwnLabel = cached = isLike
+                        && youTubeLikes == LIKES_HIDDEN
+                        && Settings.RYD_ESTIMATED_LIKE.get()
+                        ? barShowsNumber(host)
+                        : barShowsText(host);
             }
             return cached;
         }
